@@ -1,0 +1,18 @@
+{
+    "name": "kaasplootz/object-parser",
+    "description": "Parse objects to JSON and back, with just two functions.",
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Fabian3081",
+            "email": "scharfenberger.fabian@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "kaasplootz\\": "src"
+        }
+    }
+}
