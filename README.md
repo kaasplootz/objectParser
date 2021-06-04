@@ -2,7 +2,8 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/kaasplootz/objectParser?style=flat-square)](https://github.com/kaasplootz/objectParser/stargazers) [![GitHub issues](https://img.shields.io/github/issues/kaasplootz/objectParser?style=flat-square)](https://github.com/kaasplootz/objectParser/issues) [![GitHub license](https://img.shields.io/github/license/kaasplootz/objectParser?style=flat-square)](https://github.com/kaasplootz/objectParser)
 
-##Example:
+## Example:
+
 PHP8 object to JSON:
 
     <?php
