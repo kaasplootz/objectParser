@@ -2,7 +2,7 @@
     "name": "kaasplootz/object-parser",
     "description": "Parse objects to JSON and back, with just two functions.",
     "type": "library",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "license": "BSD-3-Clause",
     "authors": [
         {
