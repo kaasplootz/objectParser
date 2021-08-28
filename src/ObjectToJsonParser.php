@@ -24,16 +24,20 @@ class ObjectToJsonParser
             if ($classVar->isPublic()) {
                 $classProperties[$propertyName] = $object->$propertyName;
             } else {
-                $propertyGetMethodName = 'get' . ucfirst($propertyName);
+                if ($classVar->getType() == 'bool') {
+                    $propertyGetMethodName = 'is' . ucfirst($propertyName);
+                } else {
+                    $propertyGetMethodName = 'get' . ucfirst($propertyName);
+                }
                 if (method_exists($object, $propertyGetMethodName)) {
                     $returnType = ReflectionHandler::getReturnType($object::class, $propertyGetMethodName);
                     if ((string) $classVar->getType() === (string) $returnType) {
                         $property = $object->$propertyGetMethodName();
                         if (is_object($property)) {
                             if ($property instanceof ObjectParser) {
-                                $classProperties[$propertyName] = $this->getClassProperties($property);
+                                $classProperties[ucfirst($propertyName)] = $this->getClassProperties($property);
                             } else {
-                                throw new InvalidArgumentException('Class ' . $object::class . ' must be instance of ObjectParser');
+                                throw new InvalidArgumentException('Class ' . $property::class . ' must be instance of ObjectParser');
                             }
                         } else if (is_array($property)) {
                             $classProperties[$propertyName] = $this->goThroughArray($property);
@@ -66,7 +70,7 @@ class ObjectToJsonParser
         foreach ($array as $value) {
             if (is_object($value)) {
                 if ($value instanceof ObjectParser) {
-                    $preparedArray[] = [ReflectionHandler::getShortClassName($value::class) => $this->getClassProperties($value)];
+                    $preparedArray[] = [ucfirst(ReflectionHandler::getShortClassName($value::class)) => $this->getClassProperties($value)];
                 } else {
                     throw new InvalidArgumentException('Class ' . $value::class . ' must be instance of ObjectParser');
                 }
