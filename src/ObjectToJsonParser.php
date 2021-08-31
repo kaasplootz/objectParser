@@ -22,7 +22,8 @@ class ObjectToJsonParser
         foreach ($classVars as $classVar) {
             $propertyName = $classVar->getName();
             if ($classVar->isPublic()) {
-                $classProperties[$propertyName] = $object->$propertyName;
+                $property = $object->$propertyName;
+                $classProperties = $this->addPropertyByType($property, $propertyName, $classProperties);
             } else {
                 if ($classVar->getType() == 'bool') {
                     $propertyGetMethodName = 'is' . ucfirst($propertyName);
@@ -33,17 +34,7 @@ class ObjectToJsonParser
                     $returnType = ReflectionHandler::getReturnType($object::class, $propertyGetMethodName);
                     if ((string) $classVar->getType() === (string) $returnType) {
                         $property = $object->$propertyGetMethodName();
-                        if (is_object($property)) {
-                            if ($property instanceof ObjectParser) {
-                                $classProperties[ucfirst($propertyName)] = $this->getClassProperties($property);
-                            } else {
-                                throw new InvalidArgumentException('Class ' . $property::class . ' must be instance of ObjectParser');
-                            }
-                        } else if (is_array($property)) {
-                            $classProperties[$propertyName] = $this->goThroughArray($property);
-                        } else {
-                            $classProperties[$propertyName] = $property;
-                        }
+                        $classProperties = $this->addPropertyByType($property, $propertyName, $classProperties);
                     } else {
                         if (!$this->fillWithNull) {
                             throw new InvalidArgumentException('Change return type '. $returnType . ' of ' . $propertyGetMethodName . '() to ' . $classVar->getType());
@@ -68,19 +59,44 @@ class ObjectToJsonParser
     {
         $preparedArray = [];
         foreach ($array as $value) {
-            if (is_object($value)) {
-                if ($value instanceof ObjectParser) {
-                    $preparedArray[] = [ucfirst(ReflectionHandler::getShortClassName($value::class)) => $this->getClassProperties($value)];
-                } else {
-                    throw new InvalidArgumentException('Class ' . $value::class . ' must be instance of ObjectParser');
-                }
-            } else if (is_array($value)) {
-                $preparedArray[] = $this->goThroughArray($value);
-            } else {
-                $preparedArray[] = $value;
-            }
+            $preparedArray = $this->addPropertyByType($value, null, $preparedArray);
         }
 
         return $preparedArray;
+    }
+
+    private function addPropertyByType($property, ?string $propertyName, array $classProperties): array
+    {
+        if (is_object($property)) {
+            if ($property instanceof ObjectParser) {
+                if (strtolower(ReflectionHandler::getShortClassName($property::class)) === strtolower($propertyName)) {
+                    if (count(ReflectionHandler::getAllClassVars($property::class)) < 1) {
+                        // without json_decode('{}') it would be an empty array
+                        $classProperties[ReflectionHandler::getShortClassName($property::class)] = json_decode('{}');
+                    } else {
+                        $classProperties[ReflectionHandler::getShortClassName($property::class)] = $this->getClassProperties($property);
+                    }
+                } else {
+                    if (count(ReflectionHandler::getAllClassVars($property::class)) < 1) {
+                        // without json_decode('{}') it would be an empty array
+                        $classProperties[$propertyName] = [ucfirst(ReflectionHandler::getShortClassName($property::class)) => json_decode('{}')];
+                    } else {
+                        $classProperties[$propertyName] = [ucfirst(ReflectionHandler::getShortClassName($property::class)) => $this->getClassProperties($property)];
+                    }
+                }
+            } else {
+                throw new InvalidArgumentException('Class ' . $property::class . ' must be instance of ObjectParser');
+            }
+        } else {
+            if (is_array($property)) {
+                $classProperties[$propertyName] = $this->goThroughArray($property);
+            } else {
+                $classProperties[$propertyName] = $property;
+            }
+        }
+        if ($propertyName === null) {
+            return array_values($classProperties);
+        }
+        return $classProperties;
     }
 }

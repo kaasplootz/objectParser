@@ -6,6 +6,7 @@ Example
 -------
 
 PHP8 object to JSON:
+
 ```php
 <?php
 
@@ -13,53 +14,65 @@ namespace example;
 
 use kaasplootz\objectParser\ObjectParser;
 
+class SameName extends ObjectParser {}
+class Friend extends ObjectParser {}
+
 class User extends ObjectParser {
     public function __construct(
         public int $id,
         public string $username,
-        private string $email,
-        public array $friends = [],
+        private string $private,
+        public float $float,
+        public SameName $sameName,
+        public SameName $otherName,
+        public array $friends,
         public ?string $nullable = null
     ) {}
 
-    public function getEmail(): string
+    public function getPrivate(): string
     {
-        return $this->email;
+        return $this->private;
     }
 }
 
 $user = new User(
     1,
     'username',
-    'username@email.com',
+    'privateValue',
+    1.0,
+    new SameName(),
+    new SameName(),
     [
-        new User(2, 'username2', 'username2@email.com')
+        new Friend()
     ]
 );
 
 echo $user->toJSON();
 ```
+
 JSON result:
+
 ```json
+{
+  "id": 1,
+  "username": "username",
+  "private": "privateValue",
+  "float": 1, // do not wonder: JSON can't store 1.0 as float
+  "SameName": {},
+  "otherName": {
+    "SameName": {}
+  },
+  "friends": [
     {
-        "id": 1,
-        "username": "username",
-        "email": "username@email.com",
-        "friends": [
-            {
-                "User": {
-                    "id": 2,
-                    "username": "username2",
-                    "email": "username2@email.com",
-                    "friends": [],
-                    "nullable": null
-                } 
-            }
-        ],
-        "nullable": null
+      "Friend": {}
     }
+  ],
+  "nullable": null
+}
 ```
+
 JSON to object:
+
 ```php
 <?php
 
@@ -71,6 +84,6 @@ $user = User::fromJSON('
     }
 ');
 
-echo $user->getEmail();
-// username@email.com
+echo $userObject->getPrivate();
+// privateValue
 ```

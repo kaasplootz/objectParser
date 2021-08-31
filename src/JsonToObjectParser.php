@@ -30,6 +30,16 @@ class JsonToObjectParser
         foreach ($classProperties as $property) {
             $propertyName = $property->getName();
             $propertyType = $property->getType();
+            if ((ReflectionHandler::getNamespace($propertyType) !== null)
+                && (strtolower(ReflectionHandler::getShortClassName($propertyType)) === strtolower($propertyName))) {
+                $propertyName = ucfirst($propertyName);
+            } else if ((ReflectionHandler::getNamespace($propertyType) !== null)
+                && (strtolower(ReflectionHandler::getShortClassName($propertyType)) !== strtolower($propertyName))) {
+                // if object name != property name -> object one layer deeper
+                $shortClassName = ReflectionHandler::getShortClassName($propertyType);
+                $classAttributes[] = $this->fromJSON(json_encode($object->$propertyName->$shortClassName), $propertyType);
+                continue; // skip current because it's already done ^
+            }
             if (ReflectionHandler::isAllowedType($propertyType, $object->$propertyName)) {
                 if (is_object($object->$propertyName)) {
                     try {
@@ -40,7 +50,7 @@ class JsonToObjectParser
                             throw new InvalidArgumentException('Class ' . $instance::class . ' must be instance of ObjectParser');
                         }
                     } catch (ReflectionException $e) {
-                        throw new InvalidArgumentException('Class ' . $this->namespace . '\\' . key($object->$propertyName) . ' could not be created');
+                        throw new InvalidArgumentException('Class ' . $this->namespace . '\\' . key($object->$propertyName) . ' could not be created (2)');
                     }
                 } else if (is_array($object->$propertyName)) {
                     $classAttributes[] = $this->goThroughArray($object->$propertyName);

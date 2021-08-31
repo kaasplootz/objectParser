@@ -18,7 +18,7 @@ class ReflectionHandler
         if ($namespace !== null) {
             $namespace = $namespace . "\\";
         } else {
-            $namespace = "";
+            $namespace = '';
         }
         $reflection = new ReflectionClass($namespace . $shortClassName);
         return $reflection->getName();
@@ -29,6 +29,7 @@ class ReflectionHandler
      */
     public static function getShortClassName(string $className): string
     {
+        $className = str_replace('?', '', $className);
         $reflection = new ReflectionClass($className);
         return $reflection->getShortName();
     }
@@ -38,6 +39,7 @@ class ReflectionHandler
      */
     public static function getInstance(string $className, ?array $arguments = null): object
     {
+        $className = str_replace('?', '', $className);
         $reflection = new ReflectionClass($className);
         if ($arguments === null) {
             return $reflection->newInstanceWithoutConstructor();
@@ -53,24 +55,27 @@ class ReflectionHandler
             } catch (ReflectionException $e) {
                 return false;
             }
-        } else if ($shortClassName !== null) {
-            try {
-                ReflectionHandler::getClassName($shortClassName);
-            } catch (ReflectionException $e) {
+        } else {
+            if ($shortClassName !== null) {
+                try {
+                    ReflectionHandler::getClassName($shortClassName);
+                } catch (ReflectionException $e) {
+                    return false;
+                }
+            } else {
                 return false;
             }
-        } else {
-            return false;
         }
         return true;
     }
 
     /**
-     * @throws ReflectionException
      * @return ReflectionProperty[]
+     * @throws ReflectionException
      */
     public static function getAllClassVars(string $className): array
     {
+        $className = str_replace('?', '', $className);
         $reflection = new ReflectionClass($className);
         return $reflection->getProperties();
     }
@@ -78,6 +83,7 @@ class ReflectionHandler
     public static function getNamespace(string $className): string|null
     {
         try {
+            $className = str_replace('?', '', $className);
             $reflection = new ReflectionClass($className);
             return $reflection->getNamespaceName();
         } catch (ReflectionException $e) {
@@ -89,17 +95,29 @@ class ReflectionHandler
     {
         if ($type !== null) {
             $valueType = gettype($value);
-            if ($valueType === "NULL") {
+            if ($valueType === 'NULL') {
                 return $type->allowsNull();
-            } else if ($valueType === "integer") {
-                $valueType = "int";
-            } else if ($valueType === "boolean") {
-                $valueType = "bool";
-            } else if ($valueType === "double") {
-                $valueType = "float";
-            } else if (ReflectionHandler::isInstance(className: $type)) {
-                return true;
+            } else {
+                if ($valueType === 'integer') {
+                    $valueType = 'int';
+                } else {
+                    if ($valueType === 'boolean') {
+                        $valueType = 'bool';
+                    } else {
+                        if ($valueType === 'double') {
+                            $valueType = 'float';
+                        } else {
+                            if (ReflectionHandler::isInstance(className: $type)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
+            // for casting problems:
+            if (($valueType === 'float' && (string)$type === 'int') || ($valueType === 'int' && (string)$type === 'float'))
+                return true;
+
             return str_contains((string)$type, $valueType);
         } else {
             // no type required:
@@ -112,6 +130,7 @@ class ReflectionHandler
      */
     public static function getReturnType(string $className, string $methodName): ReflectionType
     {
+        $className = str_replace('?', '', $className);
         $reflection = new ReflectionMethod($className, $methodName);
         return $reflection->getReturnType();
     }
