@@ -57,7 +57,7 @@ JSON result:
   "id": 1,
   "username": "username",
   "private": "privateValue",
-  "float": 1, // do not wonder: JSON can't store 1.0 as float
+  "float": 1,
   "SameName": {},
   "otherName": {
     "SameName": {}
@@ -70,6 +70,8 @@ JSON result:
   "nullable": null
 }
 ```
+don't be surprised: JSON can't store x.0 as float
+___
 
 JSON to object:
 
