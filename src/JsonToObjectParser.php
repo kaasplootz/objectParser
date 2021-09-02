@@ -2,6 +2,7 @@
 
 namespace kaasplootz\objectParser;
 
+use Exception;
 use InvalidArgumentException;
 use ReflectionException;
 
@@ -13,15 +14,25 @@ class JsonToObjectParser
     {
         try {
             $this->namespace = ReflectionHandler::getNamespace($calledClass);
+            $jsonObject = json_decode($json);
+            if ($jsonObject === null) {
+                throw new Exception('Object not valid');
+            }
             return ReflectionHandler::getInstance(
                 $calledClass,
-                $this->getClassArguments(json_decode($json), $calledClass)
+                $this->getClassArguments($jsonObject, $calledClass)
             );
         } catch (ReflectionException $e) {
             throw new InvalidArgumentException("Class $calledClass could not be created");
+        } catch (Exception $e) {
+            throw new InvalidArgumentException("Class $calledClass could not be created. Reason: " . $e->getMessage());
         }
     }
 
+    /**
+     * @throws ReflectionException
+     * @throws Exception
+     */
     private function getClassArguments(object $object, string $className): array
     {
         $classAttributes = [];
@@ -40,30 +51,34 @@ class JsonToObjectParser
                 $classAttributes[] = $this->fromJSON(json_encode($object->$propertyName->$shortClassName), $propertyType);
                 continue; // skip current because it's already done ^
             }
-            if (ReflectionHandler::isAllowedType($propertyType, $object->$propertyName)) {
-                if (is_object($object->$propertyName)) {
-                    try {
-                        $instance = ReflectionHandler::getInstance($propertyType);
-                        if ($instance instanceof ObjectParser) {
-                            $classAttributes[] = $this->fromJSON(json_encode($object->$propertyName), $instance::class);
-                        } else {
-                            throw new InvalidArgumentException('Class ' . $instance::class . ' must be instance of ObjectParser');
+            if (isset($object->$propertyName)) {
+                if (ReflectionHandler::isAllowedType($propertyType, $object->$propertyName)) {
+                    if (is_object($object->$propertyName)) {
+                        try {
+                            $instance = ReflectionHandler::getInstance($propertyType);
+                            if ($instance instanceof ObjectParser) {
+                                $classAttributes[] = $this->fromJSON(json_encode($object->$propertyName), $instance::class);
+                            } else {
+                                throw new InvalidArgumentException('Class ' . $instance::class . ' must be instance of ObjectParser');
+                            }
+                        } catch (ReflectionException $e) {
+                            throw new InvalidArgumentException('Class ' . $this->namespace . '\\' . key($object->$propertyName) . ' could not be created (2)');
                         }
-                    } catch (ReflectionException $e) {
-                        throw new InvalidArgumentException('Class ' . $this->namespace . '\\' . key($object->$propertyName) . ' could not be created (2)');
+                    } else if (is_array($object->$propertyName)) {
+                        $classAttributes[] = $this->goThroughArray($object->$propertyName);
+                    } else {
+                        $classAttributes[] = $object->$propertyName;
                     }
-                } else if (is_array($object->$propertyName)) {
-                    $classAttributes[] = $this->goThroughArray($object->$propertyName);
                 } else {
-                    $classAttributes[] = $object->$propertyName;
+                    if ($propertyType->allowsNull()) {
+                        trigger_error('Invalid type ' . gettype($object->$propertyName) . '. Set "' . $propertyName . '" to null', E_USER_NOTICE);
+                        $classAttributes[] = null;
+                    } else {
+                        throw new InvalidArgumentException('Type ' . gettype($object->$propertyName) . ' not valid for "' . $propertyName . '"');
+                    }
                 }
             } else {
-                if ($propertyType->allowsNull()) {
-                    trigger_error('Invalid type ' . gettype($object->$propertyName) . '. Set "' . $propertyName . '" to null', E_USER_NOTICE);
-                    $classAttributes[] = null;
-                } else {
-                    throw new InvalidArgumentException('Type ' . gettype($object->$propertyName) . ' not valid for "' . $propertyName . '"');
-                }
+                throw new Exception('"' . $propertyName . '" is missing in object');
             }
         }
 
