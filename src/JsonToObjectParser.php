@@ -51,7 +51,7 @@ class JsonToObjectParser
                 $classAttributes[] = $this->fromJSON(json_encode($object->$propertyName->$shortClassName), $propertyType);
                 continue; // skip current because it's already done ^
             }
-            if (isset($object->$propertyName)) {
+            if (property_exists($object, $propertyName)) {
                 if (ReflectionHandler::isAllowedType($propertyType, $object->$propertyName)) {
                     if (is_object($object->$propertyName)) {
                         try {
