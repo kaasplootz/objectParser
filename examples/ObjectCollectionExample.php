@@ -21,13 +21,13 @@ $users = [
     new User(2, 'User2')
 ];
 
-$userCollection = new ObjectCollection(User::class);
+$userCollection = new ObjectCollection(User::class, $users);
 
-echo $userJson = $userCollection->toJSON($users);
+echo $userJson = $userCollection->toJSON();
 
 echo "\n";
 
 /** @var User[] $user */
-$users = $userCollection->fromJSON($userJson);
+$users = $userCollection->fromJSON(User::class, $userJson);
 
 echo $users[1]->username;
