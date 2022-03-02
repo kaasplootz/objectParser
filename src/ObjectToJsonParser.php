@@ -69,7 +69,7 @@ class ObjectToJsonParser
     {
         if (is_object($property)) {
             if ($property instanceof ObjectParser) {
-                if (strtolower(ReflectionHandler::getShortClassName($property::class)) === strtolower($propertyName)) {
+                if (strtolower(ReflectionHandler::getShortClassName($property::class)) === strtolower((string)$propertyName)) {
                     if (count(ReflectionHandler::getAllClassVars($property::class)) < 1) {
                         // without json_decode('{}') it would be an empty array
                         $classProperties[ReflectionHandler::getShortClassName($property::class)] = json_decode('{}');
